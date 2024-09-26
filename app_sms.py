@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
 # Load the trained model
-model = tf.keras.models.load_model("C:/Users/vishnu venugopal/Desktop/Deep Learning/deep-learning/RNN/results/model/spam_model/my_model.keras")
+model = tf.keras.models.load_model("https://github.com/Vishnu-Venu-gopal/RNN_SMS/blob/main/my_model.keras")
 
 # Tokenizer and preprocessing functions
 @st.cache_resource
