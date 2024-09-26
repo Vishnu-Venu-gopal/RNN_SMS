@@ -17,7 +17,7 @@ def download_model():
 download_model()
 
 # Load the saved model
-model = tf.keras.models.load_model("https://github.com/Vishnu-Venu-gopal/RNN_SMS/blob/main/my_model.keras")
+model = tf.keras.models.load_model("my_model.keras")
 
 # Define a function to initialize the tokenizer
 @st.cache_data
