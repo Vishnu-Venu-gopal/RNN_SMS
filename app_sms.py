@@ -1,51 +1,62 @@
 import streamlit as st
-import pandas as pd
 import tensorflow as tf
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+import requests
 
-# Load the trained model
-model = tf.keras.models.load_model("C:/Users/vishnu venugopal/Desktop/Deep Learning/deep-learning/RNN/results/model/spam_model/my_model.keras")
+# Download the model file from GitHub
+@st.cache_data
+def download_model():
+    url = "https://github.com/Vishnu-Venu-gopal/RNN_SMS/blob/main/my_model.keras"
+    response = requests.get(url)
+    with open("my_model.keras", "wb") as f:
+        f.write(response.content)
 
-# Tokenizer and preprocessing functions
-@st.cache_resource
-def get_tokenizer():
-    # Load and preprocess the dataset to create a tokenizer
-    dataset = pd.read_csv('https://raw.githubusercontent.com/adityaiiitmk/Datasets/master/SMSSpamCollection', sep='\t', names=['label', 'message'])
-    dataset['label'] = dataset['label'].map({'spam': 1, 'ham': 0})
-    X_train, _, _, _ = train_test_split(dataset['message'].values, dataset['label'].values, test_size=0.3, random_state=42)
-    tokeniser = tf.keras.preprocessing.text.Tokenizer()
-    tokeniser.fit_on_texts(X_train)
-    return tokeniser
+# Call the function to download the model
+download_model()
 
-# Preprocess the input text for prediction
-def preprocess_text(text, tokenizer, max_length=10):
-    encoded_text = tokenizer.texts_to_sequences([text])
-    padded_text = tf.keras.preprocessing.sequence.pad_sequences(encoded_text, maxlen=max_length, padding='post')
-    return padded_text
+# Load the saved model
+model = tf.keras.models.load_model("my_model.keras")
 
-# Set up the Streamlit app
-st.title("Spam Detection App")
-st.write("This app uses a trained RNN model to classify SMS messages as **Spam** or **Ham**.")
+# Define a function to initialize the tokenizer
+@st.cache_data
+def initialize_tokenizer():
+    tokenizer = Tokenizer()
+    return tokenizer
 
-# Load the tokenizer
-tokenizer = get_tokenizer()
+# Initialize the tokenizer
+tokenizer = initialize_tokenizer()
 
-# Input text box for the user
-user_input = st.text_input("Enter the message text here:")
+# Function to preprocess input text
+def preprocess_text(input_text, tokenizer, max_length=10):
+    sequences = tokenizer.texts_to_sequences([input_text])
+    padded_sequence = pad_sequences(sequences, maxlen=max_length, padding='post')
+    return padded_sequence
 
-# Button to trigger prediction
-if st.button("Predict"):
+# Streamlit app UI
+st.title("SMS Spam Classifier")
+
+st.write("""
+### Enter an SMS message to classify it as spam or ham:
+""")
+
+# Text input box
+user_input = st.text_input("Enter SMS text here:")
+
+# Button for prediction
+if st.button("Classify"):
     if user_input.strip() == "":
-        st.write("Please enter a valid message.")
+        st.write("Please enter a valid SMS message.")
     else:
-        # Preprocess the input and predict using the trained model
-        processed_input = preprocess_text(user_input, tokenizer)
-        prediction = (model.predict(processed_input) > 0.5).astype("int32")
-
-        # Show the result
-        if prediction[0][0] == 1:
-            st.error("The message is classified as **Spam**.")
+        # Preprocess the input text
+        preprocessed_text = preprocess_text(user_input, tokenizer)
+        
+        # Make prediction
+        prediction = model.predict(preprocessed_text)
+        
+        # Display result
+        if prediction > 0.5:
+            st.write("🔴 This message is likely **Spam**.")
         else:
-            st.success("The message is classified as **Ham**.")
+            st.write("🟢 This message is likely **Ham** (Not Spam).")
